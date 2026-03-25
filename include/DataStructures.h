@@ -7,15 +7,17 @@
 class User {
 private:
     int id;
+    bool hasAiAccess;
     std::string username;
 
 public:
-    User();
-    User(int id, const std::string& username);
+    User(int id, const std::string& username, bool hasAiAccess);
 
     int getId() const;
     std::string getUsername() const;
+    bool getAiAcess() const;
 
+    void setAiAccess(bool hasAiAccess);
     void setId(int id);
     void setUsername(const std::string& username);
 
@@ -36,7 +38,6 @@ private:
     int groupId;
 
 public:
-    Task();
     Task(int id, const std::string& title, const std::string& tag, int ownerId);
 
     int getId() const;
@@ -66,7 +67,6 @@ private:
     std::vector<int> memberIds;
 
 public:
-    StudyGroup();
     StudyGroup(int id, const std::string& name);
 
     int getId() const;
