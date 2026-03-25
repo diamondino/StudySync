@@ -1,65 +1,29 @@
-name: Cross-Platform Build
+name: Manual Build StudyPlanner
 
 on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install Qt6
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: '6.6.0'
-        modules: 'qtbase'
-
-    - name: Install Dependencies (Ubuntu)
-      if: runner.os == 'Linux'
+    - name: Install Dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential libboost-all-dev libgl1-mesa-dev
-
-    - name: Install Boost (macOS)
-      if: runner.os == 'macOS'
-      run: brew install boost
-
-    - name: Install Boost (Windows)
-      if: runner.os == 'Windows'
-      uses: MarkusJx/install-boost@v2.4.5
-      id: install-boost
-      with:
-        boost_version: 1.83.0
-        platform_version: 2022
-
-    - name: Set Boost Environment (Windows)
-      if: runner.os == 'Windows'
-      shell: bash
-      run: echo "BOOST_ROOT=${{ steps.install-boost.outputs.BOOST_ROOT }}" >> $GITHUB_ENV
+        sudo apt update
+        sudo apt install -y build-essential cmake qt6-base-dev qtcreator libboost-all-dev
 
     - name: Configure CMake
-      run: cmake -B build
+      run: cmake -B build -S .
 
-    - name: Build
+    - name: Build Project
       run: cmake --build build
 
-    - name: Upload Artifacts
+    - name: Upload Binary
       uses: actions/upload-artifact@v4
       with:
-        name: StudyPlanner-${{ matrix.os }}
-        path: |
-          build/StudyPlanner
-          build/StudyPlanner.exe
-          build/Debug/StudyPlanner.exe
-        retention-days: 7
+        name: StudyPlanner-Binary
+        path: build/StudyPlanner
