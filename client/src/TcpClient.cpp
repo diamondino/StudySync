@@ -1,22 +1,23 @@
 #include "TcpClient.h"
 #include <iostream>
 #include <istream>
+#include <boost/json/src.hpp>
 
-TcpClient::TcpClient(const std::string& host, const std::string& port, MessageHandler handler)
-    : socket_(io_context_), resolver_(io_context_), reconnect_timer_(io_context_),
-      host_(host), port_(port), on_message_(std::move(handler)) {
-    
+
+TcpClient::TcpClient(const std::string& host, const std::string& port, MessageHandler handler, ConnectHandler on_connect)
+    : socket(ioContext), resolver(ioContext), reconnectTimer(ioContext),
+      host(host), port(port), onMessage(std::move(handler)), onConnect(std::move(on_connect)) {
     connect();
     // based of chatgpt, run the io context on a seperate thread to not block the qt thread
-    io_thread_ = std::thread([this]() { io_context_.run(); });
+    ioThread = std::thread([this]() { ioContext.run(); });
 }
 
 TcpClient::~TcpClient() {
-    io_context_.stop();
-    if (io_thread_.joinable()) io_thread_.join();
+    ioContext.stop();
+    if (ioThread.joinable()) ioThread.join();
 }
 
-bool TcpClient::isConnected() const { return connected_; }
+bool TcpClient::isConnected() const { return connected; }
 
 void TcpClient::send(const std::string& msg) {
     // ensure the message ends with a newline delimiter
@@ -24,27 +25,28 @@ void TcpClient::send(const std::string& msg) {
     if (formatted_msg.back() != '\n') formatted_msg += '\n';
 
     // push to the queueeu
-    boost::asio::post(io_context_, [this, formatted_msg]() {
-        bool write_in_progress = !write_queue_.empty();
-        write_queue_.push(formatted_msg);
-        if (!write_in_progress && connected_) {
+    boost::asio::post(ioContext, [this, formatted_msg]() {
+        bool write_in_progress = !writeQueue.empty();
+        writeQueue.push(formatted_msg);
+        if (!write_in_progress && connected) {
             doWrite();
         }
     });
 }
 
 void TcpClient::connect() {
-    std::cout << "connecting to " << host_ << ":" << port_ << std::endl;
-    resolver_.async_resolve(host_, port_,
+    std::cout << "connecting to " << host << ":" << port << std::endl;
+    resolver.async_resolve(host, port,
         [this](const boost::system::error_code& ec, boost::asio::ip::tcp::resolver::results_type results) {
             if (!ec) {
-                boost::asio::async_connect(socket_, results,
+                boost::asio::async_connect(socket, results,
                     [this](const boost::system::error_code& ec, const boost::asio::ip::tcp::endpoint& endpoint) {
                         if (!ec) {
                             std::cout << "connected successfully." << std::endl;
-                            connected_ = true;
+                            connected = true;
+                            if (onConnect) onConnect();
                             doRead();
-                            if (!write_queue_.empty()) doWrite();
+                            if (!writeQueue.empty()) doWrite();
                         } else {
                             checkReconnect();
                         }
@@ -56,25 +58,25 @@ void TcpClient::connect() {
 }
 
 void TcpClient::checkReconnect() {
-    connected_ = false;
-    socket_.close();
+    connected = false;
+    socket.close();
     // reconnect every 3 seconds
-    reconnect_timer_.expires_after(std::chrono::seconds(3));
-    reconnect_timer_.async_wait([this](const boost::system::error_code& ec) {
+    reconnectTimer.expires_after(std::chrono::seconds(3));
+    reconnectTimer.async_wait([this](const boost::system::error_code& ec) {
         if (!ec) connect();
     });
 }
 
 void TcpClient::doRead() {
     // Read until a newline is found
-    boost::asio::async_read_until(socket_, read_buffer_, '\n',
+    boost::asio::async_read_until(socket, readBuffer, '\n',
         [this](const boost::system::error_code& ec, std::size_t /*length*/) {
             if (!ec) {
-                std::istream is(&read_buffer_);
+                std::istream is(&readBuffer);
                 std::string message;
                 std::getline(is, message); // extracts up to '\n'
                 
-                if (on_message_) on_message_(message);
+                if (onMessage) onMessage(message);
                 
                 doRead(); // Queue the next read
             } else {
@@ -85,12 +87,12 @@ void TcpClient::doRead() {
 }
 
 void TcpClient::doWrite() {
-    boost::asio::async_write(socket_,
-        boost::asio::buffer(write_queue_.front()),
+    boost::asio::async_write(socket,
+        boost::asio::buffer(writeQueue.front()),
         [this](const boost::system::error_code& ec, std::size_t /*length*/) {
             if (!ec) {
-                write_queue_.pop();
-                if (!write_queue_.empty()) doWrite(); // write the next one
+                writeQueue.pop();
+                if (!writeQueue.empty()) doWrite(); // write the next one
             } else {
                 checkReconnect();
             }

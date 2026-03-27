@@ -1,6 +1,9 @@
 #pragma once
 #include <boost/asio.hpp>
 #include <memory>
+#include <boost/json.hpp>
+#include <queue>
+#include <string>
 
 
 //Documentation Used: https://www.boost.org/doc/libs/latest/doc/html/boost_asio/tutorial/tutdaytime3.html
@@ -14,13 +17,18 @@ public:
     static pointer create(boost::asio::io_context& ioContext);
     tcp::socket& socket();
     void start();
+    void send(const std::string& message);
 
 private:
     TcpConnection(boost::asio::io_context& io_context); // Private so we use create()
-    void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
+
+    void doRead();
+    void doWrite();
+    void handleMessage(const std::string& msg);
 
     tcp::socket socketObject;
-    std::string message;
+    boost::asio::streambuf readBuffer;
+    std::queue<std::string> writeQueue;
 };
 
 class TcpServer {

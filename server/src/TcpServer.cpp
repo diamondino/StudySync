@@ -1,6 +1,8 @@
 #include "TcpServer.h"
 #include <ctime>
 #include <iostream>
+#include <istream>
+#include <boost/json/src.hpp>
 
 TcpConnection::pointer TcpConnection::create(boost::asio::io_context& ioContext) {
     return pointer(new TcpConnection(ioContext));
@@ -10,19 +12,93 @@ tcp::socket& TcpConnection::socket() {
     return socketObject;
 }
 void TcpConnection::start() {
-    std::time_t now = std::time(0);
-    message = std::ctime(&now);
-    boost::asio::async_write(socketObject, boost::asio::buffer(message),
-        [self = shared_from_this()](const boost::system::error_code& error, size_t bytes_transferred) {
-            self->handle_write(error, bytes_transferred);
+    std::cout << "client connected." << std::endl;
+    doRead();
+}
+void TcpConnection::doRead() {
+    auto self(shared_from_this());
+    boost::asio::async_read_until(socketObject, readBuffer, '\n',
+        [this, self](const boost::system::error_code& ec, std::size_t length) {
+            if (!ec) {
+                std::istream is(&readBuffer);
+                std::string message;
+                std::getline(is, message);
+                handleMessage(message);
+                doRead(); // loop back
+            } else {
+                std::cout << "client disconnected: " << ec.message() << std::endl;
+            }
+        });
+}
+
+void TcpConnection::handleMessage(const std::string& msg) {
+    try {
+        boost::json::value parsed = boost::json::parse(msg);
+        boost::json::object obj = parsed.as_object();
+
+        if (!obj.contains("req_id") || !obj.contains("cmd")) return;
+
+        int req_id = obj.at("req_id").as_int64();
+        std::string cmd = obj.at("cmd").as_string().c_str();
+
+        boost::json::object response;
+        response["req_id"] = req_id;
+
+        // replicating a rest api with tcp
+        if (cmd == "ping") {
+            response["status"] = "success";
+        }
+        else if (cmd == "time") {
+            std::time_t now = std::time(0);
+            std::string timeStr = std::ctime(&now);
+            if (!timeStr.empty() && timeStr.back() == '\n') timeStr.pop_back();
+
+            response["data"] = timeStr;
+            response["status"] = "success";
+        }
+        else if (cmd == "print") {
+            if (obj.contains("text")) {
+                std::cout << "\nclient printed: " << obj.at("text").as_string() << "\n" << std::endl;
+                response["status"] = "success";
+            } else {
+                response["status"] = "error";
+            }
+        }
+
+        send(boost::json::serialize(response));
+
+    } catch (const std::exception& e) {
+        std::cerr << "error parsing the json " << e.what() << std::endl;
+    }
+}
+void TcpConnection::send(const std::string& message) {
+    std::string formatted_msg = message;
+    if (formatted_msg.back() != '\n') formatted_msg += '\n';
+
+    auto self(shared_from_this());
+    boost::asio::post(socketObject.get_executor(), [this, self, formatted_msg]() {
+        bool write_in_progress = !writeQueue.empty();
+        writeQueue.push(formatted_msg);
+        if (!write_in_progress) {
+            doWrite();
+        }
     });
 }
-void TcpConnection::handle_write(const boost::system::error_code& error, size_t bytes_transferred) {
-    if (!error) std::cout << "sent " << bytes_transferred << " bytes." << std::endl;
-    else std::cerr << "write error: " << error.message() << std::endl;
+
+void TcpConnection::doWrite() {
+    auto self(shared_from_this());
+    boost::asio::async_write(socketObject,
+        boost::asio::buffer(writeQueue.front()),
+        [this, self](const boost::system::error_code& ec, std::size_t /*length*/) {
+            if (!ec) {
+                std::cout << "sent response to the client." << std::endl;
+                writeQueue.pop();
+                if (!writeQueue.empty()) doWrite();
+            } else {
+                std::cerr << "write error: " << ec.message() << std::endl;
+            }
+        });
 }
-
-
 
 TcpServer::TcpServer(boost::asio::io_context& ioContext, int port)
     : io_context_(ioContext),acceptor(ioContext, tcp::endpoint(tcp::v4(), port)) {
