@@ -1,0 +1,2 @@
+server/src/sqlite/sqlite3.c linguist-vendored
+server/include/sqlite/sqlite3.h linguist-vendored
