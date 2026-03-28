@@ -4,6 +4,7 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QLabel>
+#include "ui/ClientState.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -21,6 +22,10 @@ private:
     QPushButton* btnAiTutor;
     QPushButton* btnLogout;
 
+    QWidget* topbar;
+    QLabel* topbarTitle;
+
     void setupUi();
     void setupSidebar();
+    void setupTopbar();
 };

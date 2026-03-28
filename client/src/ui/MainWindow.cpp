@@ -16,8 +16,17 @@ void MainWindow::setupUi() {
 
     setupSidebar();
 
+    QWidget* rightSideContainer = new QWidget(this);
+    QVBoxLayout* rightSideLayout = new QVBoxLayout(rightSideContainer);
+    rightSideLayout->setContentsMargins(0, 0, 0, 0);
+
+    setupTopbar();
+
+    rightSideLayout->addWidget(topbar);
+    rightSideLayout->addStretch();
+
     mainLayout->addWidget(sidebar);
-    mainLayout->addStretch(); // placeholder for right window side
+    mainLayout->addWidget(rightSideContainer);
 }
 
 void MainWindow::setupSidebar() {
@@ -55,4 +64,24 @@ void MainWindow::setupSidebar() {
 
     btnLogout = new QPushButton("Logout", this);
     layout->addWidget(btnLogout);
+}
+
+void MainWindow::setupTopbar() {
+    topbar = new QWidget(this);
+    topbar->setFixedHeight(50);
+
+    QHBoxLayout* layout = new QHBoxLayout(topbar);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    topbarTitle = new QLabel("Dashboard", this);
+    QFont titleFont = topbarTitle->font();
+    titleFont.setBold(true);
+    titleFont.setPointSize(12);
+    topbarTitle->setFont(titleFont);
+
+    layout->addWidget(topbarTitle);
+    layout->addStretch();
+    layout->addWidget(new QPushButton("Create Task", this));
+    layout->addWidget(new QPushButton("Notifications", this));
+    layout->addWidget(new QLabel(ClientState::getUser()->getUsername().c_str(), this));
 }
