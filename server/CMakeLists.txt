@@ -4,6 +4,8 @@ add_executable(studysync_server
         src/main.cpp
         src/TcpServer.cpp
         include/TcpServer.h
+        src/sqlite/sqlite3.c
+        include/sqlite/sqlite3.h
 )
 
 target_link_libraries(studysync_server PRIVATE
