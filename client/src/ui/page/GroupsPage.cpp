@@ -6,13 +6,14 @@
 #include <QGridLayout>
 #include <QPushButton>
 #include <algorithm>
+#include "LanguageManager.h"
 
 GroupsPage::GroupsPage(QWidget* parent) : QWidget(parent) {
     QVBoxLayout* layout = new QVBoxLayout(this);
 
     QHBoxLayout* headerLayout = new QHBoxLayout();
     headerLayout->addStretch();
-    headerLayout->addWidget(new QPushButton("Create Group"));
+    headerLayout->addWidget(new QPushButton(LanguageManager::tr("group.create")));
 
     QGridLayout* gridLayout = new QGridLayout();
 

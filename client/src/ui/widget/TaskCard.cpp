@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 
 #include "ui/ClientState.h"
+#include "LanguageManager.h"
 
 TaskCard::TaskCard(const Task& task, const QString& groupName, QWidget* parent) : QFrame(parent) {
     setAttribute(Qt::WA_StyledBackground, true);
@@ -38,8 +39,8 @@ TaskCard::TaskCard(const Task& task, const QString& groupName, QWidget* parent) 
 
     int assigneeId = task.getAssignedToId();
     QString assigneeName = QString::fromStdString(ClientState::getUsername(assigneeId));
-    QLabel* subtitle = new QLabel(QString::fromStdString(task.getTag()) + "  •  Group: " + groupName);
-    QLabel* assigneeLabel = new QLabel("Assigned to: " + assigneeName);
+    QLabel* subtitle = new QLabel(QString::fromStdString(task.getTag()) + "  " + LanguageManager::tr("task.group_separator") + " " + groupName);
+    QLabel* assigneeLabel = new QLabel(LanguageManager::tr("task.assigned_to_prefix") + " " + assigneeName);
 
     QFont subFont = subtitle->font();
     subFont.setPointSize(9);

@@ -6,6 +6,7 @@
 
 #include "ui/ClientState.h"
 #include "ui/widget/CreateTaskDialog.h"
+#include "LanguageManager.h"
 
 void MainWindow::loadStylesheet(QApplication &app) {
     QFile styleFile(":/resources/themeStyle.css");
@@ -23,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 }
 
 void MainWindow::setupUi() {
-    this->setWindowTitle("StudySync");
+    this->setWindowTitle(LanguageManager::tr("app.name"));
     this->resize(1000, 700);
 
     centralWidget = new QWidget(this);
@@ -70,7 +71,7 @@ void MainWindow::setupSidebar() {
     QVBoxLayout* layout = new QVBoxLayout(sidebar);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    QLabel* logoLabel = new QLabel("📚StudySync", this);
+    QLabel* logoLabel = new QLabel(LanguageManager::tr("app.logo"), this);
     QFont logoFont = logoLabel->font();
     logoFont.setBold(true);
     logoFont.setPointSize(23);
@@ -79,10 +80,10 @@ void MainWindow::setupSidebar() {
     layout->addWidget(logoLabel);
     layout->addSpacing(5);
 
-    btnDashboard = new QPushButton("Dashboard", this);
-    btnFocus = new QPushButton("Focus Session", this);
-    btnGroups = new QPushButton("Study Groups", this);
-    btnAiTutor = new QPushButton("AI Tutor", this);
+    btnDashboard = new QPushButton(LanguageManager::tr("nav.dashboard"), this);
+    btnFocus = new QPushButton(LanguageManager::tr("nav.focus_session"), this);
+    btnGroups = new QPushButton(LanguageManager::tr("nav.study_groups"), this);
+    btnAiTutor = new QPushButton(LanguageManager::tr("nav.ai_tutor"), this);
 
     btnDashboard->setCheckable(true);
     btnFocus->setCheckable(true);
@@ -96,7 +97,7 @@ void MainWindow::setupSidebar() {
     layout->addWidget(btnAiTutor);
     layout->addStretch();
 
-    btnLogout = new QPushButton("Logout", this);
+    btnLogout = new QPushButton(LanguageManager::tr("nav.logout"), this);
     layout->addWidget(btnLogout);
 }
 
@@ -107,7 +108,7 @@ void MainWindow::setupTopbar() {
     QHBoxLayout* layout = new QHBoxLayout(topbar);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    topbarTitle = new QLabel("Dashboard", this);
+    topbarTitle = new QLabel(LanguageManager::tr("nav.dashboard"), this);
     QFont titleFont = topbarTitle->font();
     titleFont.setBold(true);
     titleFont.setPointSize(12);
@@ -115,9 +116,9 @@ void MainWindow::setupTopbar() {
 
     layout->addWidget(topbarTitle);
     layout->addStretch();
-    createTaskBtn = new QPushButton("Create Task", this);
+    createTaskBtn = new QPushButton(LanguageManager::tr("task.create"), this);
     layout->addWidget(createTaskBtn);
-    layout->addWidget(new QPushButton("Notifications", this));
+    layout->addWidget(new QPushButton(LanguageManager::tr("nav.notifications"), this));
     layout->addWidget(new QLabel(ClientState::getUser()->getUsername().c_str(), this));
 }
 
@@ -149,22 +150,22 @@ void MainWindow::switchPage() {
 
     if (clickedBtn == btnDashboard) {
         stackedWidget->setCurrentIndex(0);
-        topbarTitle->setText("Dashboard");
+        topbarTitle->setText(LanguageManager::tr("nav.dashboard"));
     } else if (clickedBtn == btnFocus) {
         stackedWidget->setCurrentIndex(1);
-        topbarTitle->setText("Focus Session");
+        topbarTitle->setText(LanguageManager::tr("nav.focus_session"));
     } else if (clickedBtn == btnGroups) {
         stackedWidget->setCurrentIndex(2);
-        topbarTitle->setText("Study Groups");
+        topbarTitle->setText(LanguageManager::tr("nav.study_groups"));
     } else if (clickedBtn == btnAiTutor) {
         stackedWidget->setCurrentIndex(3);
-        topbarTitle->setText("AI Tutor");
+        topbarTitle->setText(LanguageManager::tr("nav.ai_tutor"));
     }
 }
 
 void MainWindow::openGroupChat(int groupId) {
     stackedWidget->setCurrentIndex(4);
-    topbarTitle->setText("Group Chat");
+    topbarTitle->setText(LanguageManager::tr("nav.group_chat"));
 
     btnDashboard->setChecked(false);
     btnFocus->setChecked(false);
@@ -176,7 +177,7 @@ void MainWindow::openGroupChat(int groupId) {
 
 void MainWindow::openGroupTasks(int groupId) {
     stackedWidget->setCurrentIndex(5);
-    topbarTitle->setText("Group Tasks");
+    topbarTitle->setText(LanguageManager::tr("nav.group_tasks"));
 
     btnDashboard->setChecked(false);
     btnFocus->setChecked(false);
@@ -190,7 +191,7 @@ void MainWindow::startFocusFromDashboard() {
     btnDashboard->setChecked(true);
     btnFocus->setChecked(true);
     stackedWidget->setCurrentIndex(2);
-    topbarTitle->setText("Focus Session");
+    topbarTitle->setText(LanguageManager::tr("nav.focus_session"));
 }
 
 void MainWindow::navigateBackToGroups() {
