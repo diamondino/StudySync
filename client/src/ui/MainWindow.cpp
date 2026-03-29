@@ -108,6 +108,12 @@ void MainWindow::connectSignals() {
     connect(btnFocus, &QPushButton::clicked, this, &MainWindow::switchPage);
     connect(btnGroups, &QPushButton::clicked, this, &MainWindow::switchPage);
     connect(btnAiTutor, &QPushButton::clicked, this, &MainWindow::switchPage);
+
+    connect(pageDashboard, &DashboardPage::openGroupChatRequested, this, &MainWindow::openGroupChat);
+    connect(pageDashboard, &DashboardPage::openGroupTasksRequested, this, &MainWindow::openGroupTasks);
+    connect(pageGroups, &GroupsPage::openGroupTasksRequested, this, &MainWindow::openGroupTasks);
+    connect(pageGroups, &GroupsPage::openGroupChatRequested, this, &MainWindow::openGroupChat);
+    connect(pageGroupChat, &GroupChatPage::backToGroupsRequested, this, &MainWindow::navigateBackToGroups);
 }
 
 void MainWindow::switchPage() {
@@ -135,4 +141,40 @@ void MainWindow::switchPage() {
         stackedWidget->setCurrentIndex(3);
         topbarTitle->setText("AI Tutor");
     }
+}
+
+void MainWindow::openGroupChat(int groupId) {
+    stackedWidget->setCurrentIndex(4);
+    topbarTitle->setText("Group Chat");
+
+    btnDashboard->setChecked(false);
+    btnFocus->setChecked(false);
+    btnAiTutor->setChecked(false);
+    btnGroups->setChecked(true);
+
+    pageGroupChat->loadChat(groupId);
+}
+
+void MainWindow::openGroupTasks(int groupId) {
+    stackedWidget->setCurrentIndex(5);
+    topbarTitle->setText("Group Tasks");
+
+    btnDashboard->setChecked(false);
+    btnFocus->setChecked(false);
+    btnGroups->setChecked(true);
+    btnAiTutor->setChecked(false);
+
+    pageTasks->loadTasks(groupId);
+}
+
+void MainWindow::startFocusFromDashboard() {
+    btnDashboard->setChecked(true);
+    btnFocus->setChecked(true);
+    stackedWidget->setCurrentIndex(2);
+    topbarTitle->setText("Focus Session");
+}
+
+void MainWindow::navigateBackToGroups() {
+    btnGroups->setChecked(true);
+    switchPage();
 }

@@ -49,4 +49,8 @@ private:
 
 private slots:
     void switchPage();
+    void openGroupChat(int groupId);
+    void openGroupTasks(int groupId);
+    void startFocusFromDashboard();
+    void navigateBackToGroups();
 };
