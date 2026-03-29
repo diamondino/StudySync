@@ -1,0 +1,196 @@
+#include "ui/MainWindow.h"
+
+#include <iostream>
+#include <QApplication>
+#include <QFile>
+
+#include "ui/ClientState.h"
+
+void MainWindow::loadStylesheet(QApplication &app) {
+    QFile styleFile(":/resources/themeStyle.css");
+    if (styleFile.open(QFile::ReadOnly)) {
+        QString styleSheet = QLatin1String(styleFile.readAll());
+        app.setStyleSheet(styleSheet);
+        styleFile.close();
+    } else {
+        std::cout << "couldnt load stylesheet" << std::endl;
+    }
+}
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+    setupUi();
+    connectSignals();
+}
+
+void MainWindow::setupUi() {
+    this->setWindowTitle("StudySync");
+    this->resize(1000, 700);
+
+    centralWidget = new QWidget(this);
+    this->setCentralWidget(centralWidget);
+    mainLayout = new QHBoxLayout(centralWidget);
+    mainLayout->setContentsMargins(10, 10, 10, 10);
+    mainLayout->setSpacing(10);
+
+    setupSidebar();
+
+    QWidget* rightSideContainer = new QWidget(this);
+    QVBoxLayout* rightSideLayout = new QVBoxLayout(rightSideContainer);
+    rightSideLayout->setContentsMargins(0, 0, 0, 0);
+
+    setupTopbar();
+
+    stackedWidget = new QStackedWidget(this);
+
+    pageDashboard = new DashboardPage(this);
+    pageFocus = new FocusPage(this);
+    pageGroups = new GroupsPage(this);
+    pageAiTutor = new AiTutorPage(this);
+    pageGroupChat = new GroupChatPage(this);
+    pageTasks = new TasksPage(this);
+
+    stackedWidget->addWidget(pageDashboard);
+    stackedWidget->addWidget(pageFocus);
+    stackedWidget->addWidget(pageGroups);
+    stackedWidget->addWidget(pageAiTutor);
+    stackedWidget->addWidget(pageGroupChat);
+    stackedWidget->addWidget(pageTasks);
+
+    rightSideLayout->addWidget(topbar);
+    rightSideLayout->addWidget(stackedWidget);
+
+    mainLayout->addWidget(sidebar);
+    mainLayout->addWidget(rightSideContainer);
+}
+
+void MainWindow::setupSidebar() {
+    sidebar = new QWidget(this);
+    sidebar->setFixedWidth(200);
+
+    QVBoxLayout* layout = new QVBoxLayout(sidebar);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    QLabel* logoLabel = new QLabel("📚StudySync", this);
+    QFont logoFont = logoLabel->font();
+    logoFont.setBold(true);
+    logoFont.setPointSize(23);
+    logoLabel->setFont(logoFont);
+
+    layout->addWidget(logoLabel);
+    layout->addSpacing(5);
+
+    btnDashboard = new QPushButton("Dashboard", this);
+    btnFocus = new QPushButton("Focus Session", this);
+    btnGroups = new QPushButton("Study Groups", this);
+    btnAiTutor = new QPushButton("AI Tutor", this);
+
+    btnDashboard->setCheckable(true);
+    btnFocus->setCheckable(true);
+    btnGroups->setCheckable(true);
+    btnAiTutor->setCheckable(true);
+    btnDashboard->setChecked(true);
+
+    layout->addWidget(btnDashboard);
+    layout->addWidget(btnFocus);
+    layout->addWidget(btnGroups);
+    layout->addWidget(btnAiTutor);
+    layout->addStretch();
+
+    btnLogout = new QPushButton("Logout", this);
+    layout->addWidget(btnLogout);
+}
+
+void MainWindow::setupTopbar() {
+    topbar = new QWidget(this);
+    topbar->setFixedHeight(50);
+
+    QHBoxLayout* layout = new QHBoxLayout(topbar);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    topbarTitle = new QLabel("Dashboard", this);
+    QFont titleFont = topbarTitle->font();
+    titleFont.setBold(true);
+    titleFont.setPointSize(12);
+    topbarTitle->setFont(titleFont);
+
+    layout->addWidget(topbarTitle);
+    layout->addStretch();
+    layout->addWidget(new QPushButton("Create Task", this));
+    layout->addWidget(new QPushButton("Notifications", this));
+    layout->addWidget(new QLabel(ClientState::getUser()->getUsername().c_str(), this));
+}
+
+void MainWindow::connectSignals() {
+    connect(btnDashboard, &QPushButton::clicked, this, &MainWindow::switchPage);
+    connect(btnFocus, &QPushButton::clicked, this, &MainWindow::switchPage);
+    connect(btnGroups, &QPushButton::clicked, this, &MainWindow::switchPage);
+    connect(btnAiTutor, &QPushButton::clicked, this, &MainWindow::switchPage);
+
+    connect(pageDashboard, &DashboardPage::openGroupChatRequested, this, &MainWindow::openGroupChat);
+    connect(pageDashboard, &DashboardPage::openGroupTasksRequested, this, &MainWindow::openGroupTasks);
+    connect(pageGroups, &GroupsPage::openGroupTasksRequested, this, &MainWindow::openGroupTasks);
+    connect(pageGroups, &GroupsPage::openGroupChatRequested, this, &MainWindow::openGroupChat);
+    connect(pageGroupChat, &GroupChatPage::backToGroupsRequested, this, &MainWindow::navigateBackToGroups);
+}
+
+void MainWindow::switchPage() {
+    QPushButton* clickedBtn = qobject_cast<QPushButton*>(sender());
+    if (!clickedBtn) return;
+
+    btnDashboard->setChecked(false);
+    btnFocus->setChecked(false);
+    btnGroups->setChecked(false);
+    btnAiTutor->setChecked(false);
+
+    clickedBtn->setChecked(true);
+    pageDashboard->refreshPinnedGroups();
+
+    if (clickedBtn == btnDashboard) {
+        stackedWidget->setCurrentIndex(0);
+        topbarTitle->setText("Dashboard");
+    } else if (clickedBtn == btnFocus) {
+        stackedWidget->setCurrentIndex(1);
+        topbarTitle->setText("Focus Session");
+    } else if (clickedBtn == btnGroups) {
+        stackedWidget->setCurrentIndex(2);
+        topbarTitle->setText("Study Groups");
+    } else if (clickedBtn == btnAiTutor) {
+        stackedWidget->setCurrentIndex(3);
+        topbarTitle->setText("AI Tutor");
+    }
+}
+
+void MainWindow::openGroupChat(int groupId) {
+    stackedWidget->setCurrentIndex(4);
+    topbarTitle->setText("Group Chat");
+
+    btnDashboard->setChecked(false);
+    btnFocus->setChecked(false);
+    btnAiTutor->setChecked(false);
+    btnGroups->setChecked(true);
+
+    pageGroupChat->loadChat(groupId);
+}
+
+void MainWindow::openGroupTasks(int groupId) {
+    stackedWidget->setCurrentIndex(5);
+    topbarTitle->setText("Group Tasks");
+
+    btnDashboard->setChecked(false);
+    btnFocus->setChecked(false);
+    btnGroups->setChecked(true);
+    btnAiTutor->setChecked(false);
+
+    pageTasks->loadTasks(groupId);
+}
+
+void MainWindow::startFocusFromDashboard() {
+    btnDashboard->setChecked(true);
+    btnFocus->setChecked(true);
+    stackedWidget->setCurrentIndex(2);
+    topbarTitle->setText("Focus Session");
+}
+
+void MainWindow::navigateBackToGroups() {
+    btnGroups->setChecked(true);
+    switchPage();
+}

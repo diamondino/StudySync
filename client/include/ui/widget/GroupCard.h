@@ -1,0 +1,20 @@
+#pragma once
+
+#include <QMainWindow>
+#include <QStackedWidget>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QFrame>
+#include "DataStructures.h"
+
+class GroupCard : public QFrame {
+    Q_OBJECT
+public:
+    GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent = nullptr);
+signals:
+    void openChatRequested(int groupId);
+    void pinStateChanged();
+    void openTasksRequested(int groupId);
+};

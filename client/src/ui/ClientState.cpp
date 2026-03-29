@@ -4,7 +4,7 @@ std::unique_ptr<User> ClientState::currentUser = nullptr;
 std::vector<StudyGroup> ClientState::studyGroups;
 std::vector<Task> ClientState::tasks;
 std::string ClientState::sessionToken;
-
+std::unordered_map<int, std::string> ClientState::usernameCache;
 
 const User* ClientState::getUser() {
     return currentUser.get();
@@ -94,7 +94,19 @@ void ClientState::mockCreateGroup(const std::string& groupName) {
     }
     studyGroups.push_back(newGroup);
 }
+void ClientState::mockCreateTask(int groupId, const std::string& title, const std::string& category, int assigneeId) {
+    if (!currentUser) return;
 
+    int newId = tasks.empty() ? 200 : tasks.back().getId() + 1;
+    Task newTask(newId, title, category, false, currentUser->getId(), assigneeId, groupId);
+    tasks.push_back(newTask);
+    for (auto& group : studyGroups) {
+        if (group.getId() == groupId) {
+            group.addTaskId(newId);
+            break;
+        }
+    }
+}
 void ClientState::mockSendMessage(int groupId, const std::string& text) {
     if (!currentUser) return;
     for (auto& group : studyGroups) {
