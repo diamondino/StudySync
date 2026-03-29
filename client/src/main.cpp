@@ -1,6 +1,7 @@
 #include <QApplication>
 #include "ui/MainWindow.h"
 #include "ClientNetworkManager.h"
+#include "LanguageManager.h"
 #include <iostream>
 #include "ui/ClientState.h"
 
@@ -8,6 +9,8 @@
 int main(int argc, char* argv[]) {
     ClientNetworkManager api("127.0.0.1", "8080");
     ClientState::initDummyData();
+    LanguageManager::loadFallback(":/resources/lang/en_us.json");
+    LanguageManager::loadLanguage(":/resources/lang/en_us.json");
     QApplication app(argc, argv);
     MainWindow::loadStylesheet(app);
     MainWindow w;

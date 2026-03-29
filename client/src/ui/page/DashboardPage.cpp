@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QGroupBox>
 #include <QPushButton>
+#include "LanguageManager.h"
 
 DashboardPage::DashboardPage(QWidget* parent) : QWidget(parent) {
     QHBoxLayout* layout = new QHBoxLayout(this);
@@ -16,24 +17,24 @@ DashboardPage::DashboardPage(QWidget* parent) : QWidget(parent) {
     QVBoxLayout* leftLayout = new QVBoxLayout(leftCol);
     leftLayout->setContentsMargins(0, 0, 0, 0);
 
-    QGroupBox* welcomeGroup = new QGroupBox("Welcome");
+    QGroupBox* welcomeGroup = new QGroupBox(LanguageManager::tr("dashboard.welcome"));
     QVBoxLayout* wLayout = new QVBoxLayout(welcomeGroup);
 
     const User* user = ClientState::getUser();
-    QString username = user ? QString::fromStdString(user->getUsername()) : "Student";
-    QLabel* wSub = new QLabel("Welcome back, " + username + "!\nYou have tasks pending.");
+    QString username = user ? QString::fromStdString(user->getUsername()) : LanguageManager::tr("dashboard.student_placeholder");
+    QLabel* wSub = new QLabel(LanguageManager::tr("dashboard.welcome_back_prefix") + username + "!\n" + LanguageManager::tr("dashboard.welcome_back_suffix"));
 
-    QPushButton* wBtn = new QPushButton("Start Focus Session");
+    QPushButton* wBtn = new QPushButton(LanguageManager::tr("dashboard.start_focus"));
     connect(wBtn, &QPushButton::clicked, this, &DashboardPage::startFocusRequested);
     wLayout->addWidget(wSub);
     wLayout->addWidget(wBtn);
 
-    QGroupBox* tasksGroup = new QGroupBox("Tasks Due Today");
+    QGroupBox* tasksGroup = new QGroupBox(LanguageManager::tr("dashboard.tasks_due"));
     QVBoxLayout* tLayout = new QVBoxLayout(tasksGroup);
 
     const std::vector<Task>& allTasks = ClientState::getTasks();
     for (const Task& task : allTasks) {
-        QString groupName = "Personal";
+        QString groupName = LanguageManager::tr("task.group.personal");
         const StudyGroup* group = ClientState::getGroupById(task.getGroupId());
         if (group) {
             groupName = QString::fromStdString(group->getName());
@@ -45,7 +46,7 @@ DashboardPage::DashboardPage(QWidget* parent) : QWidget(parent) {
     leftLayout->addWidget(welcomeGroup);
     leftLayout->addWidget(tasksGroup);
 
-    QGroupBox* rightCol = new QGroupBox("Pinned Groups");
+    QGroupBox* rightCol = new QGroupBox(LanguageManager::tr("dashboard.pinned_groups"));
     pinnedGroupsLayout = new QVBoxLayout(rightCol);
     refreshPinnedGroups();
 

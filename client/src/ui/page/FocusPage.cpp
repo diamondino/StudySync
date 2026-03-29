@@ -4,11 +4,12 @@
 #include <iostream>
 #include <QApplication>
 #include <QFile>
+#include "LanguageManager.h"
 
 FocusPage::FocusPage(QWidget* parent) : QWidget(parent) {
     QVBoxLayout* layout = new QVBoxLayout(this);
 
-    QGroupBox* group = new QGroupBox("Pomodoro Timer");
+    QGroupBox* group = new QGroupBox(LanguageManager::tr("focus.timer_title"));
     QVBoxLayout* groupLayout = new QVBoxLayout(group);
     groupLayout->setAlignment(Qt::AlignCenter);
 
@@ -22,9 +23,9 @@ FocusPage::FocusPage(QWidget* parent) : QWidget(parent) {
     timerLabel->setAlignment(Qt::AlignCenter);
 
     QHBoxLayout* btnLayout = new QHBoxLayout();
-    btnLayout->addWidget(new QPushButton("Start"));
-    btnLayout->addWidget(new QPushButton("Pause"));
-    btnLayout->addWidget(new QPushButton("Reset"));
+    btnLayout->addWidget(new QPushButton(LanguageManager::tr("focus.start")));
+    btnLayout->addWidget(new QPushButton(LanguageManager::tr("focus.pause")));
+    btnLayout->addWidget(new QPushButton(LanguageManager::tr("focus.reset")));
 
     groupLayout->addWidget(taskSelect);
     groupLayout->addWidget(timerLabel);

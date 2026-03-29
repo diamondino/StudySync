@@ -1,4 +1,5 @@
 #include "ui/ClientState.h"
+#include "LanguageManager.h"
 
 std::unique_ptr<User> ClientState::currentUser = nullptr;
 std::vector<StudyGroup> ClientState::studyGroups;
@@ -128,7 +129,7 @@ void ClientState::mockRequestUsername(int userId) {
         serverResponse = "-1";
     }
     if (serverResponse == "-1") {
-        usernameCache[userId] = "Unknown User";
+        usernameCache[userId] = LanguageManager::tr("user.unknown").toStdString();;
     } else {
         usernameCache[userId] = serverResponse;
     }
@@ -136,7 +137,8 @@ void ClientState::mockRequestUsername(int userId) {
 
 std::string ClientState::getUsername(int userId) {
     if (currentUser && currentUser->getId() == userId) {
-        return "Me";
+        std::string str = LanguageManager::tr("user.me").toStdString();
+        return str;
     }
     if (usernameCache.find(userId) == usernameCache.end()) {
         mockRequestUsername(userId);

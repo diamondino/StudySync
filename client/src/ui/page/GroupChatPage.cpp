@@ -1,8 +1,9 @@
 #include "ui/page/GroupChatPage.h"
 #include "ui/ClientState.h"
+#include "LanguageManager.h"
 
 GroupChatPage::GroupChatPage(QWidget* parent) : AbstractChatPage(parent) {
-    QPushButton* btnBack = new QPushButton("Back to Groups", this);
+    QPushButton* btnBack = new QPushButton(LanguageManager::tr("nav.back_to_groups"), this);
     connect(btnBack, &QPushButton::clicked, this, &GroupChatPage::backToGroupsRequested);
     mainLayout->insertWidget(0, btnBack, 0, Qt::AlignLeft);
 }

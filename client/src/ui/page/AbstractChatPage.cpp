@@ -4,6 +4,7 @@
 #include <QTimer>
 #include <QLabel>
 #include <QFrame>
+#include "LanguageManager.h"
 
 AbstractChatPage::AbstractChatPage(QWidget* parent) : QWidget(parent) {
     setupUi();
@@ -28,9 +29,9 @@ void AbstractChatPage::setupUi() {
 
     QHBoxLayout* inputLayout = new QHBoxLayout();
     chatInput = new QLineEdit(this);
-    chatInput->setPlaceholderText("Type a message...");
+    chatInput->setPlaceholderText(LanguageManager::tr("chat.placeholder"));
 
-    btnSend = new QPushButton("Send", this);
+    btnSend = new QPushButton(LanguageManager::tr("chat.send"), this);
 
     inputLayout->addWidget(chatInput);
     inputLayout->addWidget(btnSend);

@@ -3,15 +3,16 @@
 #include "ui/ClientState.h"
 #include <QVBoxLayout>
 #include <QPushButton>
+#include "LanguageManager.h"
 
 TasksPage::TasksPage(QWidget* parent) : QWidget(parent) {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 
-    QPushButton* btnBack = new QPushButton("Back to Groups");
+    QPushButton* btnBack = new QPushButton(LanguageManager::tr("nav.back_to_groups"));
     connect(btnBack, &QPushButton::clicked, this, &TasksPage::backToGroupsRequested);
     mainLayout->addWidget(btnBack, 0, Qt::AlignLeft);
 
-    group = new QGroupBox("Tasks");
+    group = new QGroupBox(LanguageManager::tr("task.title"));
     tasksLayout = new QVBoxLayout(group);
 
     mainLayout->addWidget(group);
@@ -30,7 +31,7 @@ void TasksPage::loadTasks(int groupId) {
     if (!studyGroup) return;
 
     QString groupName = QString::fromStdString(studyGroup->getName());
-    group->setTitle(groupName + " - Tasks");
+    group->setTitle(groupName + " " + LanguageManager::tr("task.suffix"));
 
     const std::vector<Task>& allTasks = ClientState::getTasks();
     for (const Task& t : allTasks) {
