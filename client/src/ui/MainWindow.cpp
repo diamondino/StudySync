@@ -153,6 +153,7 @@ void MainWindow::switchPage() {
         stackedWidget->setCurrentIndex(0);
         topbarTitle->setText(LanguageManager::tr("nav.dashboard"));
     } else if (clickedBtn == btnFocus) {
+        pageFocus->refreshGroupList();
         stackedWidget->setCurrentIndex(1);
         topbarTitle->setText(LanguageManager::tr("nav.focus_session"));
     } else if (clickedBtn == btnGroups) {
@@ -191,6 +192,7 @@ void MainWindow::openGroupTasks(int groupId) {
 void MainWindow::startFocusFromDashboard() {
     btnDashboard->setChecked(false);
     btnFocus->setChecked(true);
+    pageFocus->refreshGroupList();
     stackedWidget->setCurrentIndex(1);
     topbarTitle->setText(LanguageManager::tr("nav.focus_session"));
     pageFocus->resetFocusTimer();

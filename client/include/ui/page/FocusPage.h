@@ -32,11 +32,13 @@ private slots:
 
 private:
     void refreshTimerLabel();
+    void refreshGroupList();
 
     QTimer* timer;
     QLabel* timerLabel;
     QPushButton* startButton;
     QPushButton* pauseButton;
     QPushButton* resetButton;
+    QComboBox* groupSelect;
     int remainingSeconds;
 };

@@ -1,4 +1,5 @@
 #include "ui/page/FocusPage.h"
+#include "ui/ClientState.h"
 #include "ui/widget/TaskCard.h"
 #include "ui/widget/GroupCard.h"
 #include <iostream>
@@ -15,8 +16,9 @@ FocusPage::FocusPage(QWidget* parent) : QWidget(parent), timer(new QTimer(this))
     QVBoxLayout* groupLayout = new QVBoxLayout(group);
     groupLayout->setAlignment(Qt::AlignCenter);
 
-    QComboBox* taskSelect = new QComboBox();
-    taskSelect->addItem(LanguageManager::tr("focus.task_placeholder"));
+    groupSelect = new QComboBox();
+    groupSelect->addItem(LanguageManager::tr("focus.group_placeholder"));
+    refreshGroupList();
 
     timerLabel = new QLabel();
     QFont timerFont = timerLabel->font();
@@ -36,7 +38,7 @@ FocusPage::FocusPage(QWidget* parent) : QWidget(parent), timer(new QTimer(this))
     btnLayout->addWidget(pauseButton);
     btnLayout->addWidget(resetButton);
 
-    groupLayout->addWidget(taskSelect);
+    groupLayout->addWidget(groupSelect);
     groupLayout->addWidget(timerLabel);
     groupLayout->addLayout(btnLayout);
 
@@ -47,6 +49,16 @@ FocusPage::FocusPage(QWidget* parent) : QWidget(parent), timer(new QTimer(this))
     connect(pauseButton, &QPushButton::clicked, this, &FocusPage::pauseTimer);
     connect(resetButton, &QPushButton::clicked, this, &FocusPage::resetTimer);
 }
+
+void FocusPage::refreshGroupList() {
+    groupSelect->clear();
+    groupSelect->addItem(LanguageManager::tr("focus.group_placeholder"));
+    const auto& studyGroups = ClientState::getStudyGroups();
+    for (const StudyGroup& group : studyGroups) {
+        groupSelect->addItem(QString::fromStdString(group.getName()), QVariant(group.getId()));
+    }
+}
+
 
 void FocusPage::refreshTimerLabel() {
     int minutes = remainingSeconds / 60;
