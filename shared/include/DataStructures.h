@@ -131,14 +131,18 @@ class LoginPayload {
 private:
     User user;
     std::vector<StudyGroup> studyGroups;
+    std::vector<StudyGroup> pendingInvites;
     std::vector<Task> tasks;
     std::string sessionToken;
 
 public:
-    LoginPayload(const User& user, const std::vector<StudyGroup>& studyGroups, const std::vector<Task>& tasks, const std::string& sessionToken = "");
+    LoginPayload(const User &user, const std::vector<StudyGroup> &studyGroups,
+                 const std::vector<StudyGroup> &pendingInvites, const std::vector<Task> &tasks,
+                 const std::string &sessionToken = "");
 
     User getUser() const;
     std::vector<StudyGroup> getStudyGroups() const;
+    std::vector<StudyGroup> getPendingInvites() const;
     std::vector<Task> getTasks() const;
     std::string getSessionToken() const;
 

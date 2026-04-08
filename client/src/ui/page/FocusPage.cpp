@@ -41,7 +41,6 @@ FocusPage::FocusPage(QWidget* parent) : QWidget(parent), timer(new QTimer(this))
     groupLayout->addWidget(groupSelect);
     groupLayout->addWidget(timerLabel);
     groupLayout->addLayout(btnLayout);
-
     layout->addWidget(group);
 
     connect(timer, &QTimer::timeout, this, &FocusPage::updateTimer);
@@ -70,7 +69,7 @@ void FocusPage::refreshTimerLabel() {
 void FocusPage::updateTimer() {
     if (remainingSeconds <= 0) {
         timer->stop();
-        startButton->setEnabled(true);
+        updateButtons();
         pauseButton->setEnabled(false);
         return;
     }
@@ -119,7 +118,7 @@ void FocusPage::resetTimer() {
     timer->stop();
     remainingSeconds = DefaultFocusDurationSeconds;
     refreshTimerLabel();
-    startButton->setEnabled(true);
+    updateButtons();
     pauseButton->setEnabled(false);
 }
 

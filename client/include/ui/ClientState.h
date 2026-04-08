@@ -11,6 +11,7 @@ private:
     static std::vector<Task> tasks;
     static std::string sessionToken;
     static std::unordered_map<int, std::string> usernameCache;
+    static std::vector<StudyGroup> pendingInvites;
 
 public:
     static const User* getUser();

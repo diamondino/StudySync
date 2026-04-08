@@ -167,6 +167,7 @@ boost::json::object StudyGroup::toJson() const {
     for (int memberId : memberIds) {
         membersArray.push_back(memberId);
     }
+
     boost::json::array tasksArray;
     for (int taskId : taskIds) {
         tasksArray.push_back(taskId);
@@ -177,12 +178,18 @@ boost::json::object StudyGroup::toJson() const {
         messagesArray.push_back(msg.toJson());
     }
 
+    boost::json::array invitedMembersArray;
+    for (int invitedId : invitedMemberIds) {
+        invitedMembersArray.push_back(invitedId);
+    }
+
     boost::json::object jsonObject = {
         { "id", id },
         { "name", name },
         { "memberIds", membersArray },
         { "taskIds", tasksArray },
-        { "messages", messagesArray }
+        { "messages", messagesArray },
+        { "invitedMemberIds", invitedMembersArray }
     };
     return jsonObject;
 }
@@ -211,11 +218,19 @@ StudyGroup StudyGroup::fromJson(const boost::json::object& obj) {
             group.addMessage(Message::fromJson(messagesArray[i].as_object()));
     }
 
+    if (obj.contains("invitedMemberIds")) {
+        boost::json::array invitedMembersArray = obj.at("invitedMemberIds").as_array();
+        for (int i = 0; i < invitedMembersArray.size(); i++)
+            group.addInvitedMemberId(invitedMembersArray[i].as_int64());
+    }
+
     return group;
 }
 
-LoginPayload::LoginPayload(const User& user, const std::vector<StudyGroup>& studyGroups, const std::vector<Task>& tasks, const std::string& sessionToken)
-    : user(user), studyGroups(studyGroups), tasks(tasks), sessionToken(sessionToken) {}
+LoginPayload::LoginPayload(const User& user, const std::vector<StudyGroup>& studyGroups, const std::vector<StudyGroup>& pendingInvites, const std::vector<Task>& tasks, const std::string& sessionToken)
+    : user(user), studyGroups(studyGroups), pendingInvites(pendingInvites), tasks(tasks), sessionToken(sessionToken) {}
+
+std::vector<StudyGroup> LoginPayload::getPendingInvites() const { return pendingInvites; }
 
 User LoginPayload::getUser() const { return user; }
 std::vector<StudyGroup> LoginPayload::getStudyGroups() const { return studyGroups; }
@@ -228,6 +243,11 @@ boost::json::object LoginPayload::toJson() const {
         groupsArray.push_back(group.toJson());
     }
 
+    boost::json::array invitesArray;
+    for (const auto& invite : pendingInvites) {
+        invitesArray.push_back(invite.toJson());
+    }
+
     boost::json::array tasksArray;
     for (const auto& task : tasks) {
         tasksArray.push_back(task.toJson());
@@ -236,6 +256,7 @@ boost::json::object LoginPayload::toJson() const {
     return {
         { "user", user.toSafeJson() },
         { "studyGroups", groupsArray },
+        { "pendingInvites", invitesArray },
         { "tasks", tasksArray },
         { "sessionToken", sessionToken }
     };
@@ -249,6 +270,13 @@ LoginPayload LoginPayload::fromJson(const boost::json::object& obj) {
         groups.push_back(StudyGroup::fromJson(item.as_object()));
     }
 
+    std::vector<StudyGroup> invites;
+    if (obj.contains("pendingInvites")) {
+        for (const auto& item : obj.at("pendingInvites").as_array()) {
+            invites.push_back(StudyGroup::fromJson(item.as_object()));
+        }
+    }
+
     std::vector<Task> tasks;
     for (const auto& item : obj.at("tasks").as_array()) {
         tasks.push_back(Task::fromJson(item.as_object()));
@@ -256,5 +284,5 @@ LoginPayload LoginPayload::fromJson(const boost::json::object& obj) {
 
     std::string sessionToken = obj.contains("sessionToken") ? obj.at("sessionToken").as_string().c_str() : "";
 
-    return LoginPayload(user, groups, tasks, sessionToken);
+    return LoginPayload(user, groups, invites, tasks, sessionToken);
 }

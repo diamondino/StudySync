@@ -6,6 +6,7 @@ std::vector<StudyGroup> ClientState::studyGroups;
 std::vector<Task> ClientState::tasks;
 std::string ClientState::sessionToken;
 std::unordered_map<int, std::string> ClientState::usernameCache;
+std::vector<StudyGroup> ClientState::pendingInvites;
 
 const User* ClientState::getUser() {
     return currentUser.get();
@@ -60,21 +61,20 @@ void ClientState::initDummyData() {
 
     StudyGroup group(101, "Late Night C++ Hackers");
     group.addMemberId(1);
-    group.addTaskId(201);
-
-    group.addMessage(Message(2, "Did anyone figure out the networking bug?"));
-    group.addMessage(Message(1, "Yeah, I'm building the UI for it right now."));
     studyGroups.push_back(group);
 
-    Task task1(201, "Build the UI", "frontend", false, 1, 1, 101);
-    Task task2(202, "Setup Postgres DB", "backend", false, 1, 0, 101);
-    tasks.push_back(task1);
-    tasks.push_back(task2);
+    StudyGroup inviteGroup(102, "Algorithm Study Squad");
+    inviteGroup.addMemberId(2);
+    inviteGroup.addInvitedMemberId(1);
+    pendingInvites.push_back(inviteGroup);
+
+    tasks.push_back(Task(201, "Build the UI", "frontend", false, 1, 1, 101));
 }
 
 void ClientState::loadFromPayload(const LoginPayload& payload) {
     currentUser = std::make_unique<User>(payload.getUser());
     studyGroups = payload.getStudyGroups();
+    pendingInvites = payload.getPendingInvites();
     tasks = payload.getTasks();
     sessionToken = payload.getSessionToken();
 }
@@ -82,7 +82,9 @@ void ClientState::loadFromPayload(const LoginPayload& payload) {
 void ClientState::clear() {
     currentUser.reset();
     studyGroups.clear();
+    pendingInvites.clear();
     tasks.clear();
+    usernameCache.clear();
     sessionToken = "";
 }
 
@@ -241,27 +243,39 @@ void ClientState::mockCancelInvite(int groupId, int userId) {
     }
 }
 
-void ClientState::mockAcceptInvite(int groupId, int userId) {
-    for (auto& group : studyGroups) {
-        if (group.getId() == groupId) {
-            group.removeInvitedMemberId(userId);
-            group.addMemberId(userId);
-            break;
-        }
-    }
-}
-
-void ClientState::mockDenyInvite(int groupId, int userId) {
-    mockCancelInvite(groupId, userId);
-}
-
 std::vector<const StudyGroup*> ClientState::getPendingInvites(int userId) {
     std::vector<const StudyGroup*> pending;
-    for (const auto& group : studyGroups) {
+    for (const auto& group : pendingInvites) {
         auto invited = group.getInvitedMemberIds();
         if (std::find(invited.begin(), invited.end(), userId) != invited.end()) {
             pending.push_back(&group);
         }
     }
     return pending;
+}
+
+void ClientState::mockAcceptInvite(int groupId, int userId) {
+    auto it = std::find_if(pendingInvites.begin(), pendingInvites.end(),
+        [groupId](const StudyGroup& g) { return g.getId() == groupId; });
+
+    if (it != pendingInvites.end()) {
+        StudyGroup acceptedGroup = *it;
+
+        acceptedGroup.removeInvitedMemberId(userId);
+        acceptedGroup.addMemberId(userId);
+
+        studyGroups.push_back(acceptedGroup);
+        pendingInvites.erase(it);
+
+        if (currentUser && currentUser->getId() == userId) {
+            currentUser->addGroupId(groupId);
+        }
+    }
+}
+
+void ClientState::mockDenyInvite(int groupId, int userId) {
+    pendingInvites.erase(std::remove_if(pendingInvites.begin(),
+        pendingInvites.end(), [groupId](const StudyGroup& g) {
+            return g.getId() == groupId;
+        }), pendingInvites.end());
 }
