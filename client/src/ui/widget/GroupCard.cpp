@@ -36,7 +36,7 @@ GroupCard::GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent) : 
     headerLayout->addWidget(btnPin);
 
     size_t memberCount = group.getMemberIds().size();
-    QLabel* members = new QLabel(QString::number(memberCount) + " members");
+    QLabel* members = new QLabel(LanguageManager::tr("group.members_count").arg(memberCount));
     members->setObjectName("members");
 
     QPushButton* btnManageMembers = new QPushButton(LanguageManager::tr("group.manage_members"));
@@ -48,8 +48,8 @@ GroupCard::GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent) : 
     connect(btnDelete, &QPushButton::clicked, this, [this, id = group.getId()]() {
         QMessageBox::StandardButton reply = QMessageBox::question(
             this,
-            "Delete Group",
-            "Are you sure you want to delete this group? All associated tasks will be lost.",
+            LanguageManager::tr("group.delete_confirm_title"),
+            LanguageManager::tr("group.delete_confirm_msg"),
             QMessageBox::Yes | QMessageBox::No
         );
 

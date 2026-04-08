@@ -45,8 +45,8 @@ CreateTaskDialog::CreateTaskDialog(QWidget* parent)
 
     layout->addRow(LanguageManager::tr("task.form.title"), titleInput);
     layout->addRow(LanguageManager::tr("task.form.tag"), tagInput);
-    layout->addRow("Group:", groupCombo);
-    layout->addRow("Assignee:", assigneeCombo);
+    layout->addRow(LanguageManager::tr("task.form.group"), groupCombo);
+    layout->addRow(LanguageManager::tr("task.form.assignee"), assigneeCombo);
     layout->addRow(completedCheck);
     layout->addRow(btnCreate, btnCancel);
 

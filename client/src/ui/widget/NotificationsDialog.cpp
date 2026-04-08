@@ -11,7 +11,7 @@
 class QScrollArea;
 
 NotificationsDialog::NotificationsDialog(QWidget* parent) : QDialog(parent) {
-    setWindowTitle("Notifications");
+    setWindowTitle(LanguageManager::tr("nav.notifications.title"));
     setMinimumSize(350, 400);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -43,26 +43,29 @@ void NotificationsDialog::refresh()
     auto invites = ClientState::getPendingInvites(user->getId());
 
     if (invites.empty()) {
-        listLayout->addWidget(new QLabel("No new notifications."));
+        listLayout->addWidget(new QLabel(LanguageManager::tr("notifications.empty")));
         return;
     }
 
     for (const StudyGroup* group : invites) {
         QFrame* box = new QFrame();
 
+        box->setAttribute(Qt::WA_StyledBackground, true);
+        box->setProperty("cssClass", "card");
+        box->setFrameShape(QFrame::StyledPanel);
 
         QVBoxLayout* boxLayout = new QVBoxLayout(box);
+        boxLayout->setContentsMargins(15, 12, 15, 12);
+        boxLayout->setSpacing(15);
 
         boxLayout->addWidget(
-            new QLabel(QString("You have been invited to join <b>%1</b>")
-            .arg(QString::fromStdString(group->getName())))
+            new QLabel(LanguageManager::tr("notifications.invite_msg").arg(QString::fromStdString(group->getName())))
         );
 
         QHBoxLayout* btnLayout = new QHBoxLayout();
 
-        QPushButton* btnAccept = new QPushButton("Accept");
-
-        QPushButton* btnDeny = new QPushButton("Deny");
+        QPushButton* btnAccept = new QPushButton(LanguageManager::tr("action.accept"));
+        QPushButton* btnDeny = new QPushButton(LanguageManager::tr("action.deny"));
 
         connect(btnAccept, &QPushButton::clicked, this,
             [this, gId = group->getId(), uId = user->getId()]() {

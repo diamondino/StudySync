@@ -96,8 +96,9 @@ void FocusPage::startTimer() {
         if (remainingSeconds == DefaultFocusDurationSeconds) {
             int groupId = groupSelect->currentData().toInt();
             int minutes = DefaultFocusDurationSeconds / 60;
-            std::string announceMsg = "I just started a focus session for " + std::to_string(minutes) + " minutes!";
-            ClientState::mockSendMessage(groupId, announceMsg);
+
+            QString msg = LanguageManager::tr("focus.announce_msg").arg(minutes);
+            ClientState::mockSendMessage(groupId, msg.toStdString());
         }
 
         timer->start(1000);

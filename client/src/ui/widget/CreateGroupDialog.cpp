@@ -10,8 +10,7 @@ CreateGroupDialog::CreateGroupDialog(QWidget* parent) : QDialog(parent) {
     setMinimumWidth(300);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
-
-    layout->addWidget(new QLabel("Group Name:"));
+    layout->addWidget(new QLabel(LanguageManager::tr("group.form.name")));
     nameInput = new QLineEdit(this);
     layout->addWidget(nameInput);
 

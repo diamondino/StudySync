@@ -13,15 +13,15 @@ EditTaskDialog::EditTaskDialog(const Task& task, QWidget* parent) : QDialog(pare
 
     QVBoxLayout* layout = new QVBoxLayout(this);
 
-    layout->addWidget(new QLabel("Title:"));
+    layout->addWidget(new QLabel(LanguageManager::tr("task.form.title")));
     titleInput = new QLineEdit(QString::fromStdString(task.getTitle()));
     layout->addWidget(titleInput);
 
-    layout->addWidget(new QLabel("Tag:"));
+    layout->addWidget(new QLabel(LanguageManager::tr("task.form.tag")));
     tagInput = new QLineEdit(QString::fromStdString(task.getTag()));
     layout->addWidget(tagInput);
 
-    layout->addWidget(new QLabel("Assignee:"));
+    layout->addWidget(new QLabel(LanguageManager::tr("task.form.assignee")));
     assigneeCombo = new QComboBox();
     
     const StudyGroup* group = ClientState::getGroupById(task.getGroupId());
@@ -51,8 +51,8 @@ EditTaskDialog::EditTaskDialog(const Task& task, QWidget* parent) : QDialog(pare
     connect(btnDelete, &QPushButton::clicked, this, [this]() {
         QMessageBox::StandardButton reply = QMessageBox::question(
             this,
-            "Delete Task",
-            "Are you sure you want to delete this task?",
+            LanguageManager::tr("task.delete_confirm_title"),
+            LanguageManager::tr("task.delete_confirm_msg"),
             QMessageBox::Yes | QMessageBox::No
         );
 

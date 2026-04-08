@@ -56,6 +56,7 @@ void GroupsPage::loadGroups() {
         connect(card, &GroupCard::openTasksRequested, this, &GroupsPage::openGroupTasksRequested);
         connect(card, &GroupCard::manageMembersRequested, this, [this, id = group.getId()]() {
             ManageMembersDialog* dialog = new ManageMembersDialog(id, this);
+            connect(dialog, &ManageMembersDialog::membersUpdated, this, &GroupsPage::loadGroups);
             dialog->exec();
         });
         connect(card, &GroupCard::deleteRequested, this, [this](int id) {
