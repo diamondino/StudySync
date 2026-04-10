@@ -9,11 +9,11 @@ class ManageMembersDialog : public QDialog {
 public:
     explicit ManageMembersDialog(int groupId, QWidget* parent = nullptr);
 
-    signals:
-        void membersUpdated();
+    void refreshList();
+signals:
+    void membersUpdated();
 
 private:
     int groupId;
     QVBoxLayout* listLayout;
-    void refreshList();
 };

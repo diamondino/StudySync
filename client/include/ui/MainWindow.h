@@ -15,6 +15,7 @@ public:
     static void loadStylesheet(QApplication &app);
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow() = default;
+    void refreshAll();
 private:
     QWidget* centralWidget;
     QHBoxLayout* mainLayout;
@@ -54,4 +55,5 @@ private slots:
 
 signals:
     void tasksChanged();
+    void groupsChanged();
 };

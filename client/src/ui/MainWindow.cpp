@@ -9,6 +9,7 @@
 #include "ui/widget/CreateTaskDialog.h"
 #include "LanguageManager.h"
 #include "ui/widget/NotificationsDialog.h"
+#include "ui/widget/ManageMembersDialog.h"
 
 void MainWindow::loadStylesheet(QApplication &app) {
     QFile styleFile(":/resources/themeStyle.css");
@@ -23,6 +24,18 @@ void MainWindow::loadStylesheet(QApplication &app) {
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setupUi();
     connectSignals();
+}
+
+void MainWindow::refreshAll() {
+    emit tasksChanged();
+    emit groupsChanged();
+
+    for (auto* notifDialog : this->findChildren<NotificationsDialog*>()) {
+        notifDialog->refresh();
+    }
+    for (auto* membersDialog : this->findChildren<ManageMembersDialog*>()) {
+        membersDialog->refreshList();
+    }
 }
 
 void MainWindow::setupUi() {
@@ -73,12 +86,11 @@ void MainWindow::setupSidebar() {
     QVBoxLayout* layout = new QVBoxLayout(sidebar);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    QLabel* logoLabel = new QLabel(LanguageManager::tr("app.logo"), this);
-    QFont logoFont = logoLabel->font();
-    logoFont.setBold(true);
-    logoFont.setPointSize(23);
-    logoLabel->setFont(logoFont);
+    QLabel* logoLabel = new QLabel(this);
+    QPixmap logoPix(":/resources/studysync_logo.png");
 
+    logoLabel->setPixmap(logoPix.scaled(180, 65, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logoLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     layout->addWidget(logoLabel);
     layout->addSpacing(5);
 
@@ -123,12 +135,10 @@ void MainWindow::setupTopbar() {
     QPushButton* btnNotifications = new QPushButton(LanguageManager::tr("nav.notifications"), this);
     layout->addWidget(btnNotifications);
     connect(btnNotifications, &QPushButton::clicked, this, [this]() {
-    NotificationsDialog* dialog = new NotificationsDialog(this);
-    dialog->exec(); // Opens as a modal window
-
-    // Refresh the groups page when closed, in case they accepted an invite!
-    pageGroups->loadGroups();
-});
+        NotificationsDialog* dialog = new NotificationsDialog(this);
+        dialog->exec();
+        pageGroups->loadGroups();
+    });
     layout->addWidget(new QLabel(ClientState::getUser()->getUsername().c_str(), this));
 }
 
@@ -150,6 +160,13 @@ void MainWindow::connectSignals() {
     connect(pageGroups, &GroupsPage::groupsChanged, this, [this]() {
         pageDashboard->refreshTaskCards();
         pageDashboard->refreshPinnedGroups();
+    });
+    connect(this, &MainWindow::groupsChanged, pageGroups, &GroupsPage::loadGroups);
+    connect(this, &MainWindow::groupsChanged, pageDashboard, &DashboardPage::refreshPinnedGroups);
+    connect(this, &MainWindow::groupsChanged, pageFocus, &FocusPage::refreshGroupList);
+    connect(pageGroups, &GroupsPage::groupsChanged, this, [this]() {
+        emit groupsChanged();
+        emit tasksChanged();
     });
 }
 
@@ -239,6 +256,5 @@ void MainWindow::openCreateTaskDialog() {
 }
 
 void MainWindow::handleNewTask(Task task) {
-    std::cout << "New Task Created: " << task.getTitle() << std::endl;
     ClientState::mockCreateTask(task.getGroupId(), task.getTitle(), task.getTag(), task.getAssignedToId());
 }

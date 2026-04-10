@@ -8,6 +8,7 @@
 #include <QFrame>
 
 class NotificationsDialog : public QDialog {
+    Q_OBJECT
 public:
     explicit NotificationsDialog(QWidget* parent = nullptr);
 
