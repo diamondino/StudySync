@@ -1,8 +1,11 @@
 #include "ClientNetworkManager.h"
 #include <iostream>
+#include <thread> // Added for timeout handling
+#include <chrono> // Added for timeout handling
 
 #include "ui/ClientState.h"
 #include "ui/MainWindow.h"
+
 ClientNetworkManager::ClientNetworkManager(const std::string& host, const std::string& port)
     : tcpClient(host, port,
         [this](const std::string& msg) { onMessageReceived(msg); },
@@ -69,6 +72,27 @@ void ClientNetworkManager::sendRequest(const std::string& command, boost::json::
     }
 
     tcpClient.send(boost::json::serialize(payload));
+
+    std::thread([this, reqId]() {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        std::function<void(const boost::json::object&)> timeoutCb;
+        {
+            std::lock_guard<std::mutex> lock(callbacksMutex);
+            auto it = pending_requests_.find(reqId);
+            if (it != pending_requests_.end()) {
+                timeoutCb = it->second;
+                pending_requests_.erase(it);
+            }
+        }
+        if (timeoutCb) {
+            boost::json::object errorPayload;
+            errorPayload["req_id"] = reqId;
+            errorPayload["status"] = "error";
+            errorPayload["message"] = "Connection timed out after 5 seconds.";
+            timeoutCb(errorPayload);
+        }
+    }).detach();
 }
 
 void ClientNetworkManager::ping(std::function<void(bool)> callback) {
