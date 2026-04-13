@@ -30,8 +30,18 @@ bool ClientState::isGroupPinned(int groupId) {
 }
 
 std::string ClientState::getUsername(int userId) {
-    if (currentUser && currentUser->getId() == userId) return LanguageManager::tr("user.me").toStdString();
-    if (usernameCache.find(userId) == usernameCache.end()) return LanguageManager::tr("user.unknown").toStdString();
+    if (currentUser && currentUser->getId() == userId) {
+        return LanguageManager::tr("user.me").toStdString();
+    }
+    if (usernameCache.find(userId) == usernameCache.end()) {
+        if (apiInstance) {
+            usernameCache[userId] = "Loading...";
+            apiInstance->requestUsername(userId, nullptr);
+        } else {
+            return LanguageManager::tr("user.unknown").toStdString();
+        }
+    }
+
     return usernameCache[userId];
 }
 
@@ -46,10 +56,7 @@ int ClientState::getUserIdByUsername(const std::string& username) {
 std::vector<const StudyGroup*> ClientState::getPendingInvites(int userId) {
     std::vector<const StudyGroup*> pending;
     for (const auto& group : pendingInvites) {
-        auto invited = group.getInvitedMemberIds();
-        if (std::find(invited.begin(), invited.end(), userId) != invited.end()) {
-            pending.push_back(&group);
-        }
+        pending.push_back(&group);
     }
     return pending;
 }
