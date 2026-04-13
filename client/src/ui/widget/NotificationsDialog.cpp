@@ -29,8 +29,7 @@ NotificationsDialog::NotificationsDialog(QWidget* parent) : QDialog(parent) {
     refresh();
 }
 
-void NotificationsDialog::refresh()
-{
+void NotificationsDialog::refresh() {
     QLayoutItem* item;
     while ((item = listLayout->takeAt(0)) != nullptr) {
         if (item->widget()) delete item->widget();
