@@ -1,4 +1,4 @@
-![Logo](client/resources/studysync_logo.png)
+![Logo](client/resources/readme_logo.png)
 ![Showcase](client/resources/showcase.png)
 
 # StudySync
