@@ -1,21 +1,24 @@
 #include "TcpServer.h"
-#include <ctime>
+#include "MessageRouter.h"
 #include <iostream>
 #include <istream>
 #include <boost/json/src.hpp>
-#include "Database.h"
 
 TcpConnection::pointer TcpConnection::create(boost::asio::io_context& ioContext) {
     return pointer(new TcpConnection(ioContext));
 }
+
 TcpConnection::TcpConnection(boost::asio::io_context& io_context) : socketObject(io_context) {}
+
 tcp::socket& TcpConnection::socket() {
     return socketObject;
 }
+
 void TcpConnection::start() {
     std::cout << "client connected." << std::endl;
     doRead();
 }
+
 void TcpConnection::doRead() {
     auto self(shared_from_this());
     boost::asio::async_read_until(socketObject, readBuffer, '\n',
@@ -45,57 +48,9 @@ void TcpConnection::handleMessage(const std::string& msg) {
         boost::json::object response;
         response["req_id"] = req_id;
 
-        // replicating a rest api with tcp
-        if (cmd == "ping") {
-            response["status"] = "success";
-        }
-        else if (cmd == "time") {
-            std::time_t now = std::time(0);
-            std::string timeStr = std::ctime(&now);
-            if (!timeStr.empty() && timeStr.back() == '\n') timeStr.pop_back();
-
-            response["data"] = timeStr;
-            response["status"] = "success";
-        }
-        else if (cmd == "createUser") {
-            std::string username = obj.at("username").as_string().c_str();
-            std::string email = obj.at("email").as_string().c_str();
-            std::string password = obj.at("password").as_string().c_str();
-
-            int newId = Database::getInstance().createUser(username, email, password);
-            if (newId != -1) {
-                Database::getInstance().createTemplateForUser(newId);
-                response["status"] = "success";
-                response["message"] = "User created successfully";
-                response["sync_counter"] = Database::getInstance().getSyncCounter();
-            } else {
-                response["status"] = "error";
-                response["message"] = "Username already exists.";
-            }
-        }
-        else if (cmd == "login") {
-            std::string username = obj.at("username").as_string().c_str();
-            std::string password = obj.at("password").as_string().c_str();
-
-            int userId = -1;
-            if (Database::getInstance().validateLogin(username, password, userId)) {
-                response["status"] = "success";
-
-                std::string token = "session_" + std::to_string(userId) + "_" + std::to_string(time(0));
-                LoginPayload payload = Database::getInstance().getFullUserData(userId, token);
-                response["payload"] = payload.toJson();
-                response["sync_counter"] = Database::getInstance().getSyncCounter();
-            } else {
-                response["status"] = "error";
-                response["message"] = "Invalid username or password.";
-            }
-        }
-        else if (cmd == "deleteUser") {
-            int userId = obj.at("userId").as_int64();
-            Database::getInstance().deleteUser(userId);
-
-            response["status"] = "success";
-            response["sync_counter"] = Database::getInstance().getSyncCounter();
+        if (!MessageRouter::getInstance().handle(cmd, obj, response)) {
+            response["status"] = "error";
+            response["message"] = "Unknown command";
         }
 
         send(boost::json::serialize(response));
@@ -135,7 +90,7 @@ void TcpConnection::doWrite() {
 }
 
 TcpServer::TcpServer(boost::asio::io_context& ioContext, int port)
-    : io_context_(ioContext),acceptor(ioContext, tcp::endpoint(tcp::v4(), port)) {
+    : io_context_(ioContext), acceptor(ioContext, tcp::endpoint(tcp::v4(), port)) {
     startAccept();
 }
 

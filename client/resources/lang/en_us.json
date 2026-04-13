@@ -73,5 +73,19 @@
   "task.form.group": "Group:",
   "focus.announce_msg": "I just started a focus session for %1 minutes!",
   "task.delete": "Delete Task",
-  "dialog.cancel": "Cancel"
+  "dialog.cancel": "Cancel",
+  "app.auth_title": "StudySync - Authentication",
+  "auth.tab_login": "Login",
+  "auth.tab_register": "Register",
+  "auth.username": "Username:",
+  "auth.password": "Password:",
+  "auth.email": "Email:",
+  "auth.login_btn": "Login",
+  "auth.register_btn": "Register",
+  "auth.status.logging_in": "Logging in...",
+  "auth.status.registering": "Registering...",
+  "auth.status.reg_success": "Registration successful! Please log in.",
+  "auth.error.missing_credentials": "Please enter username and password.",
+  "auth.error.missing_fields": "All fields are required.",
+  "auth.error.reg_failed": "Registration failed. Username may exist."
 }

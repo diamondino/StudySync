@@ -12,13 +12,10 @@ public:
     void setOnConnectCallback(std::function<void()> callback);
     // endpoints like a rest api
     void ping(std::function<void(bool success)> callback);
-    void getTime(std::function<void(std::string timeStr)> callback);
-    void printString(const std::string& text, std::function<void(bool success)> callback);
-
-private:
     void onMessageReceived(const std::string& message);
     void sendRequest(const std::string& command, boost::json::object payload, std::function<void(const boost::json::object&)> callback);
 
+private:
     TcpClient tcpClient;
     std::atomic<int> nextRequestId{1};
 

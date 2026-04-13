@@ -17,7 +17,8 @@ void ClientNetworkManager::onMessageReceived(const std::string& message) {
         boost::json::object obj = parsed.as_object();
         if (obj.contains("req_id")) {
             int req_id = obj.at("req_id").as_int64();
-            std::function<void(const boost::json::object&)> callback; {
+            std::function<void(const boost::json::object&)> callback;
+            {
                 std::lock_guard<std::mutex> lock(callbacksMutex);
                 auto it = pending_requests_.find(req_id);
                 if (it != pending_requests_.end()) {
@@ -53,28 +54,6 @@ void ClientNetworkManager::ping(std::function<void(bool)> callback) {
     boost::json::object payload;
 
     sendRequest("ping", payload, [callback](const boost::json::object& response) {
-        bool success = response.contains("status") && response.at("status").as_string() == "success";
-        callback(success);
-    });
-}
-
-void ClientNetworkManager::getTime(std::function<void(std::string)> callback) {
-    boost::json::object payload;
-    sendRequest("time", payload, [callback](const boost::json::object& response) {
-        std::string timeStr = "";
-        if (response.contains("data")) {
-            timeStr = response.at("data").as_string().c_str();
-        }
-        callback(timeStr);
-    });
-}
-
-void ClientNetworkManager::printString(const std::string& text, std::function<void(bool)> callback) {
-    boost::json::object payload = {
-        { "text", text }
-    };
-
-    sendRequest("print", payload, [callback](const boost::json::object& response) {
         bool success = response.contains("status") && response.at("status").as_string() == "success";
         callback(success);
     });

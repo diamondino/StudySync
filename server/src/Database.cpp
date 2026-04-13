@@ -376,6 +376,7 @@ void Database::deleteUser(int userId) {
 
 void Database::createTemplateForUser(int userId) {
     int groupId = createGroup("Welcome Setup", userId);
+    addMemberToGroup(groupId,userId);
     createTask(groupId, "Explore the Application", "General", userId, userId);
     addMessage(groupId, userId, "Welcome! This is your first study group.");
     togglePinGroup(userId, groupId);
