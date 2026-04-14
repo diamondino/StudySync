@@ -11,29 +11,24 @@ permissions:
 
 jobs:
   get-version:
-    name: Extract Version
     runs-on: ubuntu-latest
     outputs:
       VERSION: ${{ steps.extract.outputs.VERSION }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Get version from CMakeLists.txt
-        id: extract
+      - uses: actions/checkout@v4
+      
+      - id: extract
         run: |
           VERSION=$(grep -oP '(?<=VERSION\s)[0-9.]+' CMakeLists.txt | head -n 1)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
   build:
-    name: Build ${{ matrix.os_name }} (${{ matrix.arch }})
     needs: get-version
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # --- Linux ---
           - runner: ubuntu-24.04
             os_name: linux
             arch: amd64
@@ -44,15 +39,11 @@ jobs:
             arch: arm64
             cmake_args: ""
             ext: ""
-            
-          # --- macOS ---
           - runner: macos-latest
             os_name: macos
             arch: arm64
             cmake_args: ""
             ext: ""
-            
-          # --- Windows ---
           - runner: windows-latest
             os_name: windows
             arch: amd64
@@ -60,47 +51,35 @@ jobs:
             ext: ".exe"
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # ---------------------------------------------------------
-      # DEPENDENCY INSTALLATION
-      # ---------------------------------------------------------
-
-      # Required by the aqtinstall tool under the hood for the Qt Action
-      - name: Setup Python (Windows & Linux)
-        if: matrix.os_name == 'windows' || matrix.os_name == 'linux'
+      - if: matrix.os_name == 'windows' || matrix.os_name == 'linux'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install Qt (Windows)
-        if: matrix.os_name == 'windows'
+      - if: matrix.os_name == 'windows'
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.0'
           arch: 'win64_msvc2022_64'
 
-      - name: Install Qt (Linux)
-        if: matrix.os_name == 'linux'
+      - if: matrix.os_name == 'linux'
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.0'
 
-      - name: Install Boost (Linux)
-        if: matrix.os_name == 'linux'
+      - if: matrix.os_name == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev
 
-      - name: Install Qt and Boost (macOS)
-        if: matrix.os_name == 'macos'
+      - if: matrix.os_name == 'macos'
         run: |
           brew install qt@6 boost
           brew link --force qt@6
 
-      - name: Install Boost (Windows)
-        if: matrix.os_name == 'windows'
+      - if: matrix.os_name == 'windows'
         uses: MarkusJx/install-boost@v2
         id: install-boost
         with:
@@ -108,32 +87,32 @@ jobs:
           platform_version: 2022
           toolset: msvc
 
-      # ---------------------------------------------------------
-      # BUILD AND STAGE
-      # ---------------------------------------------------------
+      - if: matrix.os_name == 'windows'
+        shell: pwsh
+        run: |
+          $BoostLibDir = Get-ChildItem -Path "${{ steps.install-boost.outputs.BOOST_ROOT }}" -Directory -Filter "lib64-msvc*" | Select-Object -First 1
+          if ($BoostLibDir) {
+            echo "LIB=$($BoostLibDir.FullName);$env:LIB" >> $env:GITHUB_ENV
+          } else {
+            echo "LIB=${{ steps.install-boost.outputs.BOOST_ROOT }}\lib;$env:LIB" >> $env:GITHUB_ENV
+          }
 
-      - name: Configure CMake
-        shell: bash
+      - shell: bash
         run: |
           if [ "${{ matrix.os_name }}" == "windows" ]; then
-            # Passed _WIN32_WINNT via CXX_FLAGS and used the cleanly exported BOOST_ROOT from the action
             cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601" -DBOOST_ROOT="${{ steps.install-boost.outputs.BOOST_ROOT }}" -DCMAKE_POLICY_DEFAULT_CMP0167=OLD
           elif [ "${{ matrix.os_name }}" == "macos" ]; then
             QT_PREFIX=$(brew --prefix qt@6)
             cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_PREFIX"
           else
-            # For Linux, jurplel/install-qt-action handles prefix paths
             cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release
           fi
 
-      - name: Build
-        run: cmake --build build --config Release --parallel
+      - run: cmake --build build --config Release --parallel
 
-      - name: Stage binaries
-        shell: bash
+      - shell: bash
         run: |
           mkdir -p staging
-          
           if [ -f "build/server/Release/studysync_server${{ matrix.ext }}" ]; then
             cp "build/server/Release/studysync_server${{ matrix.ext }}" "staging/studysync_server-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
             cp "build/client/Release/studysync_client${{ matrix.ext }}" "staging/studysync_client-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
@@ -141,31 +120,26 @@ jobs:
             cp "build/server/studysync_server${{ matrix.ext }}" "staging/studysync_server-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
             cp "build/client/studysync_client${{ matrix.ext }}" "staging/studysync_client-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
           else
-            echo "Error: Could not locate built binaries!"
             exit 1
           fi
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: binaries-${{ matrix.os_name }}-${{ matrix.arch }}
           path: staging/*
           retention-days: 1
 
   release:
-    name: Create GitHub Release
     needs: [get-version, build]
     runs-on: ubuntu-latest
     steps:
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
           pattern: binaries-*
           merge-multiple: true
 
-      - name: Publish Release
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.get-version.outputs.VERSION }}
           name: Release v${{ needs.get-version.outputs.VERSION }}
