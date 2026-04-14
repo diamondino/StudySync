@@ -82,9 +82,8 @@ jobs:
       - if: matrix.os_name == 'windows'
         shell: pwsh
         run: |
-          choco install boost-msvc-14.3 -y
-          $BoostDir = Get-ChildItem -Path C:\local -Directory -Filter "boost_*" | Select-Object -First 1
-          echo "BOOST_ROOT=$($BoostDir.FullName)" >> $env:GITHUB_ENV
+          $BoostRoot = Get-ChildItem Env:BOOST_ROOT_* | Select-Object -ExpandProperty Value -First 1
+          echo "BOOST_ROOT=$BoostRoot" >> $env:GITHUB_ENV
 
       - shell: bash
         run: |
