@@ -23,7 +23,6 @@ jobs:
         id: extract
         run: |
           VERSION=$(grep -oP '(?<=VERSION\s)[0-9.]+' CMakeLists.txt | head -n 1)
-          echo "Found version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
   build:
@@ -34,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # --- Linux (Ubuntu 24.04 gives Qt 6.6.2 natively) ---
+          # --- Linux ---
           - runner: ubuntu-24.04
             os_name: linux
             arch: amd64
@@ -46,14 +45,14 @@ jobs:
             cmake_args: ""
             ext: ""
             
-          # --- macOS (Apple Silicon only; Intel runners are deprecated) ---
+          # --- macOS ---
           - runner: macos-latest
             os_name: macos
             arch: arm64
             cmake_args: ""
             ext: ""
             
-          # --- Windows (x64) ---
+          # --- Windows ---
           - runner: windows-latest
             os_name: windows
             arch: amd64
@@ -68,19 +67,14 @@ jobs:
       # DEPENDENCY INSTALLATION
       # ---------------------------------------------------------
 
-      - name: Install Qt and Boost (Linux)
-        if: matrix.os_name == 'linux'
+      - name: Install Qt and Boost (macOS & Linux)
+        if: matrix.os_name == 'macos' || matrix.os_name == 'linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y qt6-base-dev libboost-all-dev
-
-      - name: Install Qt and Boost (macOS)
-        if: matrix.os_name == 'macos'
-        run: |
+          # GitHub runners (both Mac and Ubuntu) have Homebrew pre-installed.
           brew install qt@6 boost
           brew link --force qt@6
 
-      - name: Setup Python (Fixes Windows Python App Alias bug)
+      - name: Setup Python (Windows)
         if: matrix.os_name == 'windows'
         uses: actions/setup-python@v5
         with:
@@ -93,7 +87,13 @@ jobs:
           version: '6.8.0'
           arch: 'win64_msvc2022_64'
 
-      # (Windows Boost is natively pre-installed on the runner, no action needed!)
+      - name: Install Boost via Chocolatey (Windows)
+        if: matrix.os_name == 'windows'
+        shell: pwsh
+        run: |
+          choco install boost-msvc-14.3 -y
+          $BoostDir = Get-ChildItem -Path C:\local\ -Filter "boost_*" | Select-Object -First 1
+          echo "BOOST_ROOT=$($BoostDir.FullName)" >> $env:GITHUB_ENV
 
       # ---------------------------------------------------------
       # BUILD AND STAGE
@@ -103,21 +103,21 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.os_name }}" == "windows" ]; then
-            # Bypasses the 618 download error by using the natively pre-installed GitHub Boost
-            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT="$BOOST_ROOT_1_83_0"
+            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT="$BOOST_ROOT" -DCMAKE_POLICY_DEFAULT_CMP0167=OLD
           else
-            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release
+            # Instructs CMake to locate the Homebrew installation of Qt
+            QT_PREFIX=$(brew --prefix qt@6)
+            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_PREFIX"
           fi
 
       - name: Build
-        run: cmake --build build --config Release
+        run: cmake --build build --config Release --parallel
 
       - name: Stage binaries
         shell: bash
         run: |
           mkdir -p staging
           
-          # Updated to match the "studysync_" prefixes output by CMake
           if [ -f "build/server/Release/studysync_server${{ matrix.ext }}" ]; then
             cp "build/server/Release/studysync_server${{ matrix.ext }}" "staging/studysync_server-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
             cp "build/client/Release/studysync_client${{ matrix.ext }}" "staging/studysync_client-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
