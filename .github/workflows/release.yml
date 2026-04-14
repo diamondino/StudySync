@@ -47,7 +47,7 @@ jobs:
           - runner: windows-latest
             os_name: windows
             arch: amd64
-            cmake_args: "-A x64"
+            cmake_args: '-G "MinGW Makefiles"'
             ext: ".exe"
 
     steps:
@@ -62,7 +62,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.0'
-          arch: 'win64_msvc2022_64'
+          arch: 'win64_mingw'
 
       - if: matrix.os_name == 'linux'
         uses: jurplel/install-qt-action@v4
@@ -84,18 +84,7 @@ jobs:
         id: install-boost
         with:
           boost_version: 1.87.0
-          platform_version: 2022
-          toolset: msvc
-
-      - if: matrix.os_name == 'windows'
-        shell: pwsh
-        run: |
-          $BoostLibDir = Get-ChildItem -Path "${{ steps.install-boost.outputs.BOOST_ROOT }}" -Directory -Filter "lib64-msvc*" | Select-Object -First 1
-          if ($BoostLibDir) {
-            echo "LIB=$($BoostLibDir.FullName);$env:LIB" >> $env:GITHUB_ENV
-          } else {
-            echo "LIB=${{ steps.install-boost.outputs.BOOST_ROOT }}\lib;$env:LIB" >> $env:GITHUB_ENV
-          }
+          toolset: mingw
 
       - shell: bash
         run: |
