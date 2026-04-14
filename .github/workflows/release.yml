@@ -79,24 +79,27 @@ jobs:
           brew install qt@6 boost
           brew link --force qt@6
 
-      - name: Setup Pre-installed Boost (Windows)
-        if: matrix.os_name == 'windows'
+      - if: matrix.os_name == 'windows'
         shell: pwsh
         run: |
-          # 1. Locate the pre-installed Boost folder on the GitHub Runner
-          $BoostDir = Get-ChildItem -Path "C:\local" -Filter "boost_*" -Directory | Select-Object -First 1
-          echo "BOOST_ROOT=$($BoostDir.FullName)" >> $env:GITHUB_ENV
+          $envVar = Get-ChildItem Env:\BOOST_ROOT_* | Select-Object -First 1
+          if (-not $envVar) {
+              Write-Error "No BOOST_ROOT environment variable found!"
+              exit 1
+          }
+          $BoostRoot = $envVar.Value
+          echo "BOOST_ROOT=$BoostRoot" >> $env:GITHUB_ENV
           
-          # 2. Locate the pre-compiled MSVC libraries folder
-          $BoostLib = Get-ChildItem -Path "$($BoostDir.FullName)" -Filter "lib64-msvc*" -Directory | Select-Object -First 1
-          
-          # 3. Inject it into the MSVC LIB path so it auto-links without needing CMake changes
-          echo "LIB=$($BoostLib.FullName);$env:LIB" >> $env:GITHUB_ENV
+          $BoostLib = Get-ChildItem -Path $BoostRoot -Directory -Filter "lib*-msvc*" | Select-Object -First 1
+          if ($BoostLib) {
+              echo "LIB=$($BoostLib.FullName);$env:LIB" >> $env:GITHUB_ENV
+          } else {
+              echo "LIB=$BoostRoot\lib;$env:LIB" >> $env:GITHUB_ENV
+          }
 
       - shell: bash
         run: |
           if [ "${{ matrix.os_name }}" == "windows" ]; then
-            # Passed -D_WIN32_WINNT here so you don't need to touch CMakeLists.txt
             cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601" -DBOOST_ROOT="$BOOST_ROOT" -DCMAKE_POLICY_DEFAULT_CMP0167=OLD
           elif [ "${{ matrix.os_name }}" == "macos" ]; then
             QT_PREFIX=$(brew --prefix qt@6)
