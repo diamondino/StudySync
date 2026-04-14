@@ -84,6 +84,7 @@ jobs:
         id: install-boost
         with:
           boost_version: 1.87.0
+          platform_version: 2022
           toolset: mingw
 
       - shell: bash
