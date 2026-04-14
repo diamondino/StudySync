@@ -99,20 +99,14 @@ jobs:
           brew install qt@6 boost
           brew link --force qt@6
 
-      - name: Install Boost via Chocolatey (Windows)
+      - name: Install Boost (Windows)
         if: matrix.os_name == 'windows'
-        shell: pwsh
-        run: |
-          choco install boost-msvc-14.3 -y
-          
-          # Find the root boost directory
-          $BoostDir = Get-ChildItem -Path C:\local\ -Filter "boost_*" | Select-Object -First 1
-          
-          # Find the specific 64-bit library subfolder inside it
-          $BoostLibDir = Get-ChildItem -Path $BoostDir.FullName -Filter "lib64-msvc*" | Select-Object -First 1
-          
-          echo "BOOST_ROOT=$($BoostDir.FullName)" >> $env:GITHUB_ENV
-          echo "BOOST_LIBRARYDIR=$($BoostLibDir.FullName)" >> $env:GITHUB_ENV
+        uses: MarkusJx/install-boost@v2
+        id: install-boost
+        with:
+          boost_version: 1.87.0
+          platform_version: 2022
+          toolset: msvc
 
       # ---------------------------------------------------------
       # BUILD AND STAGE
@@ -122,7 +116,8 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.os_name }}" == "windows" ]; then
-            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT="$BOOST_ROOT" -DBOOST_LIBRARYDIR="$BOOST_LIBRARYDIR" -DCMAKE_POLICY_DEFAULT_CMP0167=OLD
+            # Passed _WIN32_WINNT via CXX_FLAGS and used the cleanly exported BOOST_ROOT from the action
+            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601" -DBOOST_ROOT="${{ steps.install-boost.outputs.BOOST_ROOT }}" -DCMAKE_POLICY_DEFAULT_CMP0167=OLD
           elif [ "${{ matrix.os_name }}" == "macos" ]; then
             QT_PREFIX=$(brew --prefix qt@6)
             cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_PREFIX"
