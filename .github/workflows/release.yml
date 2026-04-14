@@ -67,15 +67,9 @@ jobs:
       # DEPENDENCY INSTALLATION
       # ---------------------------------------------------------
 
-      - name: Install Qt and Boost (macOS & Linux)
-        if: matrix.os_name == 'macos' || matrix.os_name == 'linux'
-        run: |
-          # GitHub runners (both Mac and Ubuntu) have Homebrew pre-installed.
-          brew install qt@6 boost
-          brew link --force qt@6
-
-      - name: Setup Python (Windows)
-        if: matrix.os_name == 'windows'
+      # Required by the aqtinstall tool under the hood for the Qt Action
+      - name: Setup Python (Windows & Linux)
+        if: matrix.os_name == 'windows' || matrix.os_name == 'linux'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -87,13 +81,38 @@ jobs:
           version: '6.8.0'
           arch: 'win64_msvc2022_64'
 
+      - name: Install Qt (Linux)
+        if: matrix.os_name == 'linux'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.0'
+
+      - name: Install Boost (Linux)
+        if: matrix.os_name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev
+
+      - name: Install Qt and Boost (macOS)
+        if: matrix.os_name == 'macos'
+        run: |
+          brew install qt@6 boost
+          brew link --force qt@6
+
       - name: Install Boost via Chocolatey (Windows)
         if: matrix.os_name == 'windows'
         shell: pwsh
         run: |
           choco install boost-msvc-14.3 -y
+          
+          # Find the root boost directory
           $BoostDir = Get-ChildItem -Path C:\local\ -Filter "boost_*" | Select-Object -First 1
+          
+          # Find the specific 64-bit library subfolder inside it
+          $BoostLibDir = Get-ChildItem -Path $BoostDir.FullName -Filter "lib64-msvc*" | Select-Object -First 1
+          
           echo "BOOST_ROOT=$($BoostDir.FullName)" >> $env:GITHUB_ENV
+          echo "BOOST_LIBRARYDIR=$($BoostLibDir.FullName)" >> $env:GITHUB_ENV
 
       # ---------------------------------------------------------
       # BUILD AND STAGE
@@ -103,11 +122,13 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.os_name }}" == "windows" ]; then
-            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT="$BOOST_ROOT" -DCMAKE_POLICY_DEFAULT_CMP0167=OLD
-          else
-            # Instructs CMake to locate the Homebrew installation of Qt
+            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT="$BOOST_ROOT" -DBOOST_LIBRARYDIR="$BOOST_LIBRARYDIR" -DCMAKE_POLICY_DEFAULT_CMP0167=OLD
+          elif [ "${{ matrix.os_name }}" == "macos" ]; then
             QT_PREFIX=$(brew --prefix qt@6)
             cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_PREFIX"
+          else
+            # For Linux, jurplel/install-qt-action handles prefix paths
+            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release
           fi
 
       - name: Build
