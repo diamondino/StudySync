@@ -47,7 +47,7 @@ jobs:
           - runner: windows-latest
             os_name: windows
             arch: amd64
-            cmake_args: '-G "MinGW Makefiles"'
+            cmake_args: "-A x64"
             ext: ".exe"
 
     steps:
@@ -62,7 +62,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.0'
-          arch: 'win64_mingw'
+          arch: 'win64_msvc2022_64'
 
       - if: matrix.os_name == 'linux'
         uses: jurplel/install-qt-action@v4
@@ -80,17 +80,16 @@ jobs:
           brew link --force qt@6
 
       - if: matrix.os_name == 'windows'
-        uses: MarkusJx/install-boost@v2
-        id: install-boost
-        with:
-          boost_version: 1.87.0
-          platform_version: 2022
-          toolset: mingw
+        shell: pwsh
+        run: |
+          choco install boost-msvc-14.3 -y
+          $BoostDir = Get-ChildItem -Path C:\local -Directory -Filter "boost_*" | Select-Object -First 1
+          echo "BOOST_ROOT=$($BoostDir.FullName)" >> $env:GITHUB_ENV
 
       - shell: bash
         run: |
           if [ "${{ matrix.os_name }}" == "windows" ]; then
-            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601" -DBOOST_ROOT="${{ steps.install-boost.outputs.BOOST_ROOT }}" -DCMAKE_POLICY_DEFAULT_CMP0167=OLD
+            cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601" -DBOOST_ROOT="$BOOST_ROOT" -DCMAKE_POLICY_DEFAULT_CMP0167=OLD
           elif [ "${{ matrix.os_name }}" == "macos" ]; then
             QT_PREFIX=$(brew --prefix qt@6)
             cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_PREFIX"
